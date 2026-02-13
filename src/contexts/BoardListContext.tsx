@@ -1,11 +1,8 @@
 'use client';
 
-import React, { createContext, useContext, useReducer, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useReducer, useEffect, useCallback, useRef } from 'react';
 import { Board, Card, Column, Label } from '@/types';
 import { useAuth } from './AuthContext';
-
-// Generate unique ID
-const generateId = () => `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
 // Convert database board to frontend board format
 const convertBoard = (dbBoard: any): Board => ({
@@ -56,7 +53,6 @@ function boardListReducer(state: BoardListState, action: BoardListAction): Board
     case 'SET_CURRENT_BOARD':
       return { ...state, currentBoard: action.payload };
     case 'UPDATE_CURRENT_BOARD': {
-      // Update current board if it matches
       if (state.currentBoard?.id === action.payload.id) {
         return { ...state, currentBoard: action.payload };
       }
@@ -91,7 +87,7 @@ interface BoardListContextType {
   updateBoardTitle: (boardId: string, title: string) => Promise<void>;
   shareBoard: (boardId: string, email: string) => Promise<{ success: boolean; warning?: string }>;
   unshareBoard: (boardId: string, email: string) => Promise<void>;
-  addColumn: (boardId: string, title: string) => Promise<void>;
+  addColumn: (boardId: string, title: string) => Promise<Column>;
   updateColumnTitle: (boardId: string, columnId: string, title: string) => Promise<void>;
   deleteColumn: (boardId: string, columnId: string) => Promise<void>;
   addCard: (boardId: string, columnId: string, title: string) => Promise<void>;
@@ -114,6 +110,14 @@ export function BoardListProvider({ children }: { children: React.ReactNode }) {
     currentBoard: null,
     isLoading: true,
   });
+  
+  // Use ref to track current board id for refresh
+  const currentBoardIdRef = useRef<string | null>(null);
+
+  // Update ref when currentBoard changes
+  useEffect(() => {
+    currentBoardIdRef.current = state.currentBoard?.id || null;
+  }, [state.currentBoard]);
 
   // Load boards when user changes
   const loadBoards = useCallback(async () => {
@@ -132,8 +136,9 @@ export function BoardListProvider({ children }: { children: React.ReactNode }) {
       dispatch({ type: 'SET_BOARDS', payload: { boards, sharedBoards } });
       
       // Also update currentBoard if it exists
-      if (state.currentBoard) {
-        const updatedBoard = [...boards, ...sharedBoards].find(b => b.id === state.currentBoard?.id);
+      const currentId = currentBoardIdRef.current;
+      if (currentId) {
+        const updatedBoard = [...boards, ...sharedBoards].find(b => b.id === currentId);
         if (updatedBoard) {
           dispatch({ type: 'SET_CURRENT_BOARD', payload: updatedBoard });
         }
@@ -142,14 +147,15 @@ export function BoardListProvider({ children }: { children: React.ReactNode }) {
       console.error('Error loading boards:', error);
       dispatch({ type: 'SET_BOARDS', payload: { boards: [], sharedBoards: [] } });
     }
-  }, [authState.user, state.currentBoard]);
+  }, [authState.user]);
 
-  // Refresh current board from server
+  // Refresh current board from server using ref
   const refreshCurrentBoard = useCallback(async () => {
-    if (!state.currentBoard) return;
+    const boardId = currentBoardIdRef.current;
+    if (!boardId) return;
     
     try {
-      const response = await fetch(`/api/boards/${state.currentBoard.id}`);
+      const response = await fetch(`/api/boards/${boardId}`);
       const data = await response.json();
       if (data.board) {
         const board = convertBoard(data.board);
@@ -158,7 +164,7 @@ export function BoardListProvider({ children }: { children: React.ReactNode }) {
     } catch (error) {
       console.error('Error refreshing current board:', error);
     }
-  }, [state.currentBoard]);
+  }, []); // No dependencies - uses ref
 
   useEffect(() => {
     if (authState.isLoading) return;
@@ -225,13 +231,15 @@ export function BoardListProvider({ children }: { children: React.ReactNode }) {
     await refreshCurrentBoard();
   }, [loadBoards, refreshCurrentBoard]);
 
-  const addColumn = useCallback(async (boardId: string, title: string) => {
-    await fetch('/api/columns', {
+  const addColumn = useCallback(async (boardId: string, title: string): Promise<Column> => {
+    const response = await fetch('/api/columns', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ boardId, title }),
     });
+    const data = await response.json();
     await refreshCurrentBoard();
+    return data.column;
   }, [refreshCurrentBoard]);
 
   const updateColumnTitle = useCallback(async (boardId: string, columnId: string, title: string) => {
@@ -303,7 +311,6 @@ export function BoardListProvider({ children }: { children: React.ReactNode }) {
       return authState.user.name;
     }
     
-    // Fetch owner name from API
     try {
       const response = await fetch(`/api/users?id=${ownerId}`);
       const data = await response.json();

@@ -1,17 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Resend } from 'resend';
 
-// Use your verified domain sender
-// For testing, you can use: 'onboarding@resend.dev'
-const getSenderEmail = () => process.env.RESEND_SENDER_EMAIL || 'contato@ultralike.com.br';
+// Use verified sender - for production use your verified domain
+// For testing/development, use: 'onboarding@resend.dev'
+const getSenderEmail = () => {
+  // In production, use your verified domain sender
+  if (process.env.RESEND_SENDER_EMAIL) {
+    return process.env.RESEND_SENDER_EMAIL;
+  }
+  // Default to onboarding@resend.dev for testing
+  return 'onboarding@resend.dev';
+};
 
 export async function POST(request: NextRequest) {
   try {
     const apiKey = process.env.RESEND_API_KEY;
     if (!apiKey) {
-      console.error('RESEND_API_KEY not configured');
+      console.error('❌ RESEND_API_KEY not configured');
       return NextResponse.json(
-        { error: 'Email service not configured' },
+        { error: 'Email service not configured', success: false },
         { status: 500 }
       );
     }
@@ -21,16 +28,20 @@ export async function POST(request: NextRequest) {
 
     if (!email) {
       return NextResponse.json(
-        { error: 'Email é obrigatório' },
+        { error: 'Email é obrigatório', success: false },
         { status: 400 }
       );
     }
 
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    const senderEmail = getSenderEmail();
+
+    console.log(`📧 Enviando email de boas-vindas para: ${email}`);
+    console.log(`📧 Remetente: ${senderEmail}`);
 
     // Send welcome email
     const { data, error } = await resend.emails.send({
-      from: `Kanban <${getSenderEmail()}>`,
+      from: `Kanban <${senderEmail}>`,
       to: email,
       subject: '🎉 Bem-vindo ao Kanban!',
       html: `
@@ -115,14 +126,14 @@ export async function POST(request: NextRequest) {
     });
 
     if (error) {
-      console.error('Error sending welcome email:', error);
+      console.error('❌ Error sending welcome email:', JSON.stringify(error, null, 2));
       return NextResponse.json(
-        { error: 'Erro ao enviar email de boas-vindas', details: error.message },
+        { error: 'Erro ao enviar email de boas-vindas', details: error, success: false },
         { status: 500 }
       );
     }
 
-    console.log('✅ Email de boas-vindas enviado com sucesso:', data?.id);
+    console.log('✅ Email de boas-vindas enviado com sucesso! ID:', data?.id);
 
     return NextResponse.json({
       success: true,
@@ -131,10 +142,10 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error: unknown) {
-    console.error('Error in send-welcome:', error);
+    console.error('❌ Error in send-welcome:', error);
     const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
     return NextResponse.json(
-      { error: 'Erro interno do servidor', details: errorMessage },
+      { error: 'Erro interno do servidor', details: errorMessage, success: false },
       { status: 500 }
     );
   }
