@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Resend } from 'resend';
-
-const getSenderEmail = () => process.env.RESEND_SENDER_EMAIL || 'contato@ultralike.com.br';
+import { APP_URL, RESEND_SENDER_EMAIL } from '@/lib/config';
 
 // Storage for verification tokens (must match send-verification)
 declare global {
@@ -97,10 +96,9 @@ export async function POST(request: NextRequest) {
     const apiKey = process.env.RESEND_API_KEY;
     if (apiKey) {
       const resend = new Resend(apiKey);
-      const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
       
       resend.emails.send({
-        from: `Kanban <${getSenderEmail()}>`,
+        from: `Kanban <${RESEND_SENDER_EMAIL}>`,
         to: email,
         subject: '🎉 Bem-vindo ao Kanban!',
         html: `
@@ -124,7 +122,7 @@ export async function POST(request: NextRequest) {
                 <p style="color: rgba(255,255,255,0.9); margin: 0; font-size: 16px;">Sua conta foi verificada com sucesso!</p>
               </div>
               <div style="text-align: center; margin: 30px 0;">
-                <a href="${appUrl}/dashboard" style="display: inline-block; background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white; padding: 15px 40px; text-decoration: none; border-radius: 8px; font-size: 16px; font-weight: bold;">Começar Agora →</a>
+                <a href="${APP_URL}/dashboard" style="display: inline-block; background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white; padding: 15px 40px; text-decoration: none; border-radius: 8px; font-size: 16px; font-weight: bold;">Começar Agora →</a>
               </div>
               <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
               <p style="color: #999; font-size: 12px; text-align: center;">© 2024 Kanban - Organize suas ideias, conquiste seus objetivos.</p>

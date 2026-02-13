@@ -1,16 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Resend } from 'resend';
-
-// Use verified sender - for production use your verified domain
-// For testing/development, use: 'onboarding@resend.dev'
-const getSenderEmail = () => {
-  // In production, use your verified domain sender
-  if (process.env.RESEND_SENDER_EMAIL) {
-    return process.env.RESEND_SENDER_EMAIL;
-  }
-  // Default to onboarding@resend.dev for testing
-  return 'onboarding@resend.dev';
-};
+import { APP_URL, RESEND_SENDER_EMAIL } from '@/lib/config';
 
 export async function POST(request: NextRequest) {
   try {
@@ -33,16 +23,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-    const registerUrl = `${appUrl}/register`;
-    const senderEmail = getSenderEmail();
+    const registerUrl = `${APP_URL}/register`;
 
     console.log(`📧 Enviando email de convite para: ${email}`);
-    console.log(`📧 Remetente: ${senderEmail}`);
+    console.log(`📧 Remetente: ${RESEND_SENDER_EMAIL}`);
 
     // Send invite email
     const { data, error } = await resend.emails.send({
-      from: `Kanban <${senderEmail}>`,
+      from: `Kanban <${RESEND_SENDER_EMAIL}>`,
       to: email,
       subject: `📋 ${ownerName} convidou você para colaborar no Kanban!`,
       html: `

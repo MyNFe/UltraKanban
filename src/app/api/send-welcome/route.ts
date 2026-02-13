@@ -1,16 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Resend } from 'resend';
-
-// Use verified sender - for production use your verified domain
-// For testing/development, use: 'onboarding@resend.dev'
-const getSenderEmail = () => {
-  // In production, use your verified domain sender
-  if (process.env.RESEND_SENDER_EMAIL) {
-    return process.env.RESEND_SENDER_EMAIL;
-  }
-  // Default to onboarding@resend.dev for testing
-  return 'onboarding@resend.dev';
-};
+import { APP_URL, RESEND_SENDER_EMAIL } from '@/lib/config';
 
 export async function POST(request: NextRequest) {
   try {
@@ -33,15 +23,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-    const senderEmail = getSenderEmail();
-
     console.log(`📧 Enviando email de boas-vindas para: ${email}`);
-    console.log(`📧 Remetente: ${senderEmail}`);
+    console.log(`📧 Remetente: ${RESEND_SENDER_EMAIL}`);
 
     // Send welcome email
     const { data, error } = await resend.emails.send({
-      from: `Kanban <${senderEmail}>`,
+      from: `Kanban <${RESEND_SENDER_EMAIL}>`,
       to: email,
       subject: '🎉 Bem-vindo ao Kanban!',
       html: `
@@ -95,7 +82,7 @@ export async function POST(request: NextRequest) {
 
             <!-- CTA Button -->
             <div style="text-align: center; margin: 30px 0;">
-              <a href="${appUrl}/dashboard" 
+              <a href="${APP_URL}/dashboard" 
                  style="display: inline-block; background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white; padding: 15px 40px; text-decoration: none; border-radius: 8px; font-size: 16px; font-weight: bold;">
                 Começar Agora →
               </a>

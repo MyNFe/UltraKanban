@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { Resend } from 'resend';
+import { APP_URL, RESEND_SENDER_EMAIL } from '@/lib/config';
 
 // Send invite email directly
 async function sendInviteEmail(email: string, boardTitle: string, ownerName: string) {
@@ -12,16 +13,12 @@ async function sendInviteEmail(email: string, boardTitle: string, ownerName: str
     }
 
     const resend = new Resend(apiKey);
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-    const registerUrl = `${appUrl}/register`;
-    
-    // Use onboarding@resend.dev for testing, or your verified domain
-    const senderEmail = process.env.RESEND_SENDER_EMAIL || 'onboarding@resend.dev';
+    const registerUrl = `${APP_URL}/register`;
 
     console.log(`📧 Enviando email de convite para: ${email}`);
 
     const { data, error } = await resend.emails.send({
-      from: `Kanban <${senderEmail}>`,
+      from: `Kanban <${RESEND_SENDER_EMAIL}>`,
       to: email,
       subject: `📋 ${ownerName} convidou você para colaborar no Kanban!`,
       html: `

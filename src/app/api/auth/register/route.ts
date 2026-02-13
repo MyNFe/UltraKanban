@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { Resend } from 'resend';
+import { APP_URL, RESEND_SENDER_EMAIL } from '@/lib/config';
 
 // Simple hash function for password (demonstration purposes)
 const simpleHash = (str: string): string => {
@@ -23,15 +24,11 @@ async function sendWelcomeEmail(email: string, name: string) {
     }
 
     const resend = new Resend(apiKey);
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-    
-    // Use onboarding@resend.dev for testing, or your verified domain
-    const senderEmail = process.env.RESEND_SENDER_EMAIL || 'onboarding@resend.dev';
 
     console.log(`📧 Enviando email de boas-vindas para: ${email}`);
 
     const { data, error } = await resend.emails.send({
-      from: `Kanban <${senderEmail}>`,
+      from: `Kanban <${RESEND_SENDER_EMAIL}>`,
       to: email,
       subject: '🎉 Bem-vindo ao Kanban!',
       html: `
@@ -68,7 +65,7 @@ async function sendWelcomeEmail(email: string, name: string) {
               </ul>
             </div>
             <div style="text-align: center; margin: 30px 0;">
-              <a href="${appUrl}/dashboard" style="display: inline-block; background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white; padding: 15px 40px; text-decoration: none; border-radius: 8px; font-size: 16px; font-weight: bold;">Começar Agora →</a>
+              <a href="${APP_URL}/dashboard" style="display: inline-block; background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white; padding: 15px 40px; text-decoration: none; border-radius: 8px; font-size: 16px; font-weight: bold;">Começar Agora →</a>
             </div>
             <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
             <p style="color: #999; font-size: 12px; text-align: center;">© 2024 Kanban - Organize suas ideias, conquiste seus objetivos.</p>

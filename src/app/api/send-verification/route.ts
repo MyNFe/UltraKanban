@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Resend } from 'resend';
-
-const getSenderEmail = () => process.env.RESEND_SENDER_EMAIL || 'contato@ultralike.com.br';
+import { APP_URL, RESEND_SENDER_EMAIL } from '@/lib/config';
 
 // Storage for verification tokens (in-memory for demo)
 // In production, use a database
@@ -79,12 +78,11 @@ export async function POST(request: NextRequest) {
     saveTokens(filteredTokens);
 
     // Build verification URL
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-    const verificationUrl = `${appUrl}/verify-email?token=${token}&email=${encodeURIComponent(email)}`;
+    const verificationUrl = `${APP_URL}/verify-email?token=${token}&email=${encodeURIComponent(email)}`;
 
     // Send email using Resend
     const { data, error } = await resend.emails.send({
-      from: `Kanban <${getSenderEmail()}>`,
+      from: `Kanban <${RESEND_SENDER_EMAIL}>`,
       to: email,
       subject: 'Verifique seu email - Kanban',
       html: `
