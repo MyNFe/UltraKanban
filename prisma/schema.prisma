@@ -1,0 +1,84 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DATABASE_URL")
+}
+
+model User {
+  id            String   @id @default(cuid())
+  name          String
+  email         String   @unique
+  password      String
+  emailVerified Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  boards        Board[]  @relation("UserBoards")
+
+  @@map("users")
+}
+
+model Board {
+  id         String       @id @default(cuid())
+  title      String
+  userId     String
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+  sharedWith BoardShare[]
+  owner      User         @relation("UserBoards", fields: [userId], references: [id], onDelete: Cascade)
+  columns    Column[]
+
+  @@map("boards")
+}
+
+model BoardShare {
+  id        String   @id @default(cuid())
+  boardId   String
+  email     String
+  createdAt DateTime @default(now())
+  board     Board    @relation(fields: [boardId], references: [id], onDelete: Cascade)
+
+  @@unique([boardId, email])
+  @@map("board_shares")
+}
+
+model Column {
+  id        String   @id @default(cuid())
+  title     String
+  boardId   String
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  cards     Card[]
+  board     Board    @relation(fields: [boardId], references: [id], onDelete: Cascade)
+
+  @@map("columns")
+}
+
+model Card {
+  id          String    @id @default(cuid())
+  title       String
+  description String?
+  columnId    String
+  order       Int       @default(0)
+  dueDate     DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  column      Column    @relation(fields: [columnId], references: [id], onDelete: Cascade)
+  labels      Label[]
+
+  @@map("cards")
+}
+
+model Label {
+  id     String  @id @default(cuid())
+  name   String?
+  color  String
+  cardId String
+  card   Card    @relation(fields: [cardId], references: [id], onDelete: Cascade)
+
+  @@map("labels")
+}
